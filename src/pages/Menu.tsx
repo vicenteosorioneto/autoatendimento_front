@@ -30,7 +30,7 @@ export default function Menu() {
         const response = await api.get(`/tables/${tableId}/menu`)
         
         // Backend retorna { sessionId, categories }
-        const { sessionId, categories } = response.data
+        const { categories } = response.data
         
         // Transformar categories em um único array de produtos
         const allProducts = Array.isArray(categories)
