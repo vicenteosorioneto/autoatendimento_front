@@ -11,7 +11,10 @@ export interface CartItem {
 interface CartContextData {
   items: CartItem[]
   addItem: (product: { id: string; name: string; price: number }) => void
+  updateQuantity: (id: string, qty: number) => void
+  removeItem: (id: string) => void
   getTotalItems: () => number
+  getTotalPrice: () => number
 }
 
 const CartContext = createContext<CartContextData | undefined>(undefined)
@@ -37,12 +40,43 @@ export function CartProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  function updateQuantity(id: string, qty: number) {
+    if (qty <= 0) {
+      // Remover item se quantidade <= 0
+      setItems((prevItems) => prevItems.filter((item) => item.id !== id))
+    } else {
+      // Atualizar quantidade
+      setItems((prevItems) =>
+        prevItems.map((item) =>
+          item.id === id ? { ...item, quantity: qty } : item
+        )
+      )
+    }
+  }
+
+  function removeItem(id: string) {
+    setItems((prevItems) => prevItems.filter((item) => item.id !== id))
+  }
+
   function getTotalItems(): number {
     return items.reduce((total, item) => total + item.quantity, 0)
   }
 
+  function getTotalPrice(): number {
+    return items.reduce((total, item) => total + item.price * item.quantity, 0)
+  }
+
   return (
-    <CartContext.Provider value={{ items, addItem, getTotalItems }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addItem,
+        updateQuantity,
+        removeItem,
+        getTotalItems,
+        getTotalPrice,
+      }}
+    >
       {children}
     </CartContext.Provider>
   )

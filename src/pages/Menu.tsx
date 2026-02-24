@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useCart } from '../contexts/CartContext'
 
@@ -12,6 +12,7 @@ interface Product {
 
 export default function Menu() {
   const { tableId } = useParams<{ tableId: string }>()
+  const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -112,7 +113,10 @@ export default function Menu() {
       {totalItems > 0 && (
         <div className="sticky bottom-0 bg-white border-t shadow-lg">
           <div className="max-w-md mx-auto px-4 py-4">
-            <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold text-lg active:scale-95 transition">
+            <button
+              onClick={() => navigate(`/mesa/${tableId}/pedido`)}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold text-lg active:scale-95 transition"
+            >
               Ver Pedido ({totalItems})
             </button>
           </div>
