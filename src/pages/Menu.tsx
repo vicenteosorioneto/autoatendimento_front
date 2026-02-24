@@ -28,14 +28,19 @@ export default function Menu() {
         setLoading(true)
         setError(null)
         const response = await api.get(`/tables/${tableId}/menu`)
-        // Adaptar resposta da API: pode ser { menu: Product[] } ou Product[]
-        const menuData = Array.isArray(response.data)
-          ? response.data
-          : response.data.menu
-        setProducts(menuData)
+        
+        // Backend retorna { sessionId, categories }
+        const { sessionId, categories } = response.data
+        
+        // Transformar categories em um único array de produtos
+        const allProducts = Array.isArray(categories)
+          ? categories.flatMap((category: any) => category.products ?? [])
+          : []
+        
+        setProducts(allProducts)
       } catch (err) {
         setError('Erro ao carregar o cardápio')
-        // TODO: implementar logger futuramente
+        setProducts([]) // Garantir que products nunca fique undefined
       } finally {
         setLoading(false)
       }
