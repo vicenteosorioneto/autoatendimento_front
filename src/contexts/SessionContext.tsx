@@ -1,14 +1,6 @@
-import { createContext, useContext, useState } from 'react'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
-
-interface SessionContextData {
-  sessionId: string | null
-  setSessionId: (sessionId: string | null) => void
-  tableId: string | null
-  setTableId: (tableId: string | null) => void
-}
-
-const SessionContext = createContext<SessionContextData | undefined>(undefined)
+import { SessionContext } from './sessionContext'
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -26,12 +18,4 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       {children}
     </SessionContext.Provider>
   )
-}
-
-export function useSession() {
-  const context = useContext(SessionContext)
-  if (context === undefined) {
-    throw new Error('useSession must be used within a SessionProvider')
-  }
-  return context
 }

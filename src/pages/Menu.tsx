@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
-import { useCart } from '../contexts/CartContext'
-import { useSession } from '../contexts/SessionContext'
+import { useCart } from '../contexts/useCart.ts'
+import { useSession } from '../contexts/useSession.ts'
 
 interface Product {
   id: string
   name: string
   price: number
   description?: string
+}
+
+interface Category {
+  products: Product[]
 }
 
 export default function Menu() {
@@ -21,11 +25,14 @@ export default function Menu() {
   const { setSessionId, setTableId } = useSession()
   const totalItems = getTotalItems()
 
-  if (!tableId) {
-    return <div className="p-4 text-red-600">Mesa inválida</div>
-  }
-
   useEffect(() => {
+    if (!tableId) {
+      setProducts([])
+      setError(null)
+      setLoading(false)
+      return
+    }
+
     async function loadMenu() {
       try {
         setLoading(true)
@@ -33,18 +40,21 @@ export default function Menu() {
         const response = await api.get(`/tables/${tableId}/menu`)
 
         // Backend retorna { sessionId, categories }
-        const { sessionId, categories } = response.data
+        const { sessionId, categories } = response.data as {
+          sessionId?: string
+          categories?: Category[]
+        }
 
         setSessionId(sessionId ?? null)
         setTableId(tableId ?? null)
 
         // Transformar categories em um único array de produtos
         const allProducts = Array.isArray(categories)
-          ? categories.flatMap((category: any) => category.products ?? [])
+          ? categories.flatMap((category: Category) => category.products ?? [])
           : []
 
         setProducts(allProducts)
-      } catch (err) {
+      } catch {
         setError('Erro ao carregar o cardápio')
         setProducts([]) // Garantir que products nunca fique undefined
       } finally {
@@ -53,7 +63,11 @@ export default function Menu() {
     }
 
     loadMenu()
-  }, [tableId])
+  }, [tableId, setSessionId, setTableId])
+
+  if (!tableId) {
+    return <div className="p-4 text-red-600">Mesa inválida</div>
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useCart } from '../contexts/CartContext'
-import { useSession } from '../contexts/SessionContext'
+import { useCart } from '../contexts/useCart.ts'
+import { useSession } from '../contexts/useSession.ts'
 import { api } from '../lib/api'
 
 export default function Order() {
@@ -26,7 +26,8 @@ export default function Order() {
         if (!isCancelled && recoveredSessionId) {
           setSessionId(recoveredSessionId)
         }
-      } catch {
+      } catch (error) {
+        console.error('Erro ao recuperar sessão da mesa', error)
       } finally {
         if (!isCancelled) {
           setIsRecoveringSession(false)
@@ -84,6 +85,7 @@ export default function Order() {
       clear()
       navigate(`/mesa/${resolvedTableId}/sucesso`)
     } catch (error) {
+      console.error('Erro ao enviar pedido', error)
       alert('Erro ao enviar pedido. Tente novamente.')
     } finally {
       setIsSubmitting(false)
