@@ -106,8 +106,18 @@ export default function Menu() {
       {/* Header */}
       <header className="sticky top-0 bg-white shadow-sm z-10">
         <div className="max-w-md mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold">Mesa Social</h1>
-          <p className="text-sm text-gray-500">Mesa {tableId}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-bold">Mesa Social</h1>
+              <p className="text-sm text-gray-500">Mesa {tableId}</p>
+            </div>
+            <button
+              onClick={() => navigate(`/mesa/${tableId}/conta`)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium active:scale-95 transition"
+            >
+              Ver Conta
+            </button>
+          </div>
         </div>
       </header>
 
