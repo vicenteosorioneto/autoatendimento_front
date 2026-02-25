@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import { api } from '../lib/api'
 import { useCart } from '../contexts/useCart.ts'
 import { useSession } from '../contexts/useSession.ts'
+import ErrorState from '../components/ErrorState'
 
 interface Product {
   id: string
@@ -15,17 +17,22 @@ interface Category {
   products: Product[]
 }
 
+interface MenuErrorState {
+  title: string
+  message?: string
+}
+
 export default function Menu() {
   const { tableId } = useParams<{ tableId: string }>()
   const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<MenuErrorState | null>(null)
   const { addItem, getTotalItems } = useCart()
   const { setSessionId, setTableId } = useSession()
   const totalItems = getTotalItems()
 
-  useEffect(() => {
+  const loadMenu = useCallback(async () => {
     if (!tableId) {
       setProducts([])
       setError(null)
@@ -33,37 +40,62 @@ export default function Menu() {
       return
     }
 
-    async function loadMenu() {
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await api.get(`/tables/${tableId}/menu`)
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await api.get(`/tables/${tableId}/menu`)
 
-        // Backend retorna { sessionId, categories }
-        const { sessionId, categories } = response.data as {
-          sessionId?: string
-          categories?: Category[]
-        }
-
-        setSessionId(sessionId ?? null)
-        setTableId(tableId ?? null)
-
-        // Transformar categories em um único array de produtos
-        const allProducts = Array.isArray(categories)
-          ? categories.flatMap((category: Category) => category.products ?? [])
-          : []
-
-        setProducts(allProducts)
-      } catch {
-        setError('Erro ao carregar o cardápio')
-        setProducts([]) // Garantir que products nunca fique undefined
-      } finally {
-        setLoading(false)
+      const { sessionId, categories } = response.data as {
+        sessionId?: string
+        categories?: Category[]
       }
-    }
 
-    loadMenu()
+      setSessionId(sessionId ?? null)
+      setTableId(tableId)
+
+      const allProducts = Array.isArray(categories)
+        ? categories.flatMap((category: Category) => category.products ?? [])
+        : []
+
+      setProducts(allProducts)
+    } catch (caughtError) {
+      if (axios.isAxiosError(caughtError)) {
+        if (caughtError.response?.status === 404) {
+          setError({
+            title: 'Mesa não encontrada',
+            message: 'Confira o QR Code/NFC ou peça ajuda ao garçom.',
+          })
+        } else {
+          const isNetworkError =
+            !caughtError.response ||
+            caughtError.message.toLowerCase().includes('failed to fetch')
+
+          if (isNetworkError) {
+            setError({
+              title: 'Sem conexão',
+              message: 'Verifique sua internet e tente novamente.',
+            })
+          } else {
+            setError({
+              title: 'Não foi possível carregar o cardápio',
+            })
+          }
+        }
+      } else {
+        setError({
+          title: 'Não foi possível carregar o cardápio',
+        })
+      }
+
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
   }, [tableId, setSessionId, setTableId])
+
+  useEffect(() => {
+    loadMenu()
+  }, [loadMenu])
 
   if (!tableId) {
     return <div className="p-4 text-red-600">Mesa inválida</div>
@@ -91,9 +123,12 @@ export default function Menu() {
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              {error}
-            </div>
+            <ErrorState
+              title={error.title}
+              message={error.message}
+              actionLabel="Tentar novamente"
+              onAction={loadMenu}
+            />
           )}
 
           {!loading && !error && products.length === 0 && (

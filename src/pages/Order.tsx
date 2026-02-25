@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/useCart.ts'
 import { useSession } from '../contexts/useSession.ts'
 import { api } from '../lib/api'
+import ErrorState from '../components/ErrorState'
 
 export default function Order() {
   const { tableId } = useParams<{ tableId: string }>()
@@ -11,6 +12,7 @@ export default function Order() {
   const { sessionId, tableId: sessionTableId, setSessionId } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRecoveringSession, setIsRecoveringSession] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     if (sessionId !== null || !tableId) return
@@ -54,11 +56,13 @@ export default function Order() {
   }
 
   async function handleConfirmOrder() {
+    setSubmitError(null)
+
     if (!sessionId) {
       if (isRecoveringSession) {
         return
       }
-      alert('Sessão não encontrada. Recarregue o cardápio para continuar.')
+      setSubmitError('Sessão não encontrada. Recarregue o cardápio para continuar.')
       return
     }
 
@@ -66,7 +70,7 @@ export default function Order() {
 
     const resolvedTableId = sessionTableId ?? tableId
     if (!resolvedTableId) {
-      alert('Mesa inválida.')
+      setSubmitError('Mesa inválida.')
       return
     }
 
@@ -86,7 +90,7 @@ export default function Order() {
       navigate(`/mesa/${resolvedTableId}/sucesso`)
     } catch (error) {
       console.error('Erro ao enviar pedido', error)
-      alert('Erro ao enviar pedido. Tente novamente.')
+      setSubmitError('Erro ao enviar pedido. Tente novamente.')
     } finally {
       setIsSubmitting(false)
     }
@@ -182,6 +186,11 @@ export default function Order() {
                 R$ {totalPrice.toFixed(2)}
               </span>
             </div>
+            {submitError && (
+              <div className="mb-3">
+                <ErrorState title="Não foi possível confirmar o pedido" message={submitError} />
+              </div>
+            )}
             <button
               onClick={handleConfirmOrder}
               disabled={isSubmitting || isRecoveringSession}
