@@ -7,12 +7,23 @@ import ErrorState from '../components/ErrorState'
 
 export default function Order() {
   const { tableId } = useParams<{ tableId: string }>()
+  const storageKey = `mesa_social_pending_request_${tableId}`
   const navigate = useNavigate()
   const { items, updateQuantity, removeItem, getTotalPrice, clear } = useCart()
   const { sessionId, tableId: sessionTableId, setSessionId } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRecoveringSession, setIsRecoveringSession] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!tableId) return
+
+    const storedPendingRequestId = localStorage.getItem(storageKey)
+    if (storedPendingRequestId) {
+      setPendingRequestId(storedPendingRequestId)
+    }
+  }, [tableId, storageKey])
 
   useEffect(() => {
     if (sessionId !== null || !tableId) return
@@ -76,8 +87,13 @@ export default function Order() {
 
     try {
       setIsSubmitting(true)
-      const clientRequestId = crypto.randomUUID()
+      const clientRequestId = pendingRequestId ?? crypto.randomUUID()
 
+      if (!pendingRequestId) {
+        localStorage.setItem(storageKey, clientRequestId)
+        setPendingRequestId(clientRequestId)
+      }
+      console.log("clientRequestId usado:", clientRequestId)
       await api.post(`/sessions/${sessionId}/orders`, {
         clientRequestId,
         items: items.map((item) => ({
@@ -86,6 +102,8 @@ export default function Order() {
         })),
       })
 
+      localStorage.removeItem(storageKey)
+      setPendingRequestId(null)
       clear()
       navigate(`/mesa/${resolvedTableId}/sucesso`)
     } catch (error) {

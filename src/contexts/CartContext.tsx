@@ -1,8 +1,8 @@
 import { useEffect, useReducer } from 'react'
 import type { ReactNode } from 'react'
+import { useParams } from 'react-router-dom'
 import { CartContext } from './cartContext'
 import type { CartItem, CartProduct } from '../types/cart'
-import { useSession } from './useSession'
 
 function readCartItemsFromStorage(storageKey: string | null): CartItem[] {
   if (!storageKey) {
@@ -105,7 +105,7 @@ function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { tableId } = useSession()
+  const { tableId } = useParams<{ tableId: string }>()
   const storageKey = tableId ? `mesa_social_cart_${tableId}` : null
   const [items, dispatch] = useReducer(
     cartReducer,
