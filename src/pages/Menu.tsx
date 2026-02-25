@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useCart } from '../contexts/CartContext'
+import { useSession } from '../contexts/SessionContext'
 
 interface Product {
   id: string
@@ -17,6 +18,7 @@ export default function Menu() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { addItem, getTotalItems } = useCart()
+  const { setSessionId, setTableId } = useSession()
   const totalItems = getTotalItems()
 
   if (!tableId) {
@@ -29,15 +31,18 @@ export default function Menu() {
         setLoading(true)
         setError(null)
         const response = await api.get(`/tables/${tableId}/menu`)
-        
+
         // Backend retorna { sessionId, categories }
-        const { categories } = response.data
-        
+        const { sessionId, categories } = response.data
+
+        setSessionId(sessionId ?? null)
+        setTableId(tableId ?? null)
+
         // Transformar categories em um único array de produtos
         const allProducts = Array.isArray(categories)
           ? categories.flatMap((category: any) => category.products ?? [])
           : []
-        
+
         setProducts(allProducts)
       } catch (err) {
         setError('Erro ao carregar o cardápio')

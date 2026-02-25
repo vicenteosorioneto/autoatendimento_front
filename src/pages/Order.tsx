@@ -1,10 +1,15 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
+import { useSession } from '../contexts/SessionContext'
+import { api } from '../lib/api'
 
 export default function Order() {
   const { tableId } = useParams<{ tableId: string }>()
   const navigate = useNavigate()
-  const { items, updateQuantity, removeItem, getTotalPrice } = useCart()
+  const { items, updateQuantity, removeItem, getTotalPrice, clear } = useCart()
+  const { sessionId, tableId: sessionTableId } = useSession()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!tableId) {
     return <div className="p-4 text-red-600">Mesa inválida</div>
@@ -17,9 +22,39 @@ export default function Order() {
     navigate(`/mesa/${tableId}`)
   }
 
-  function handleConfirmOrder() {
-    // TODO: implementar envio do pedido
-    console.log('Confirmar pedido:', { tableId, items, totalPrice })
+  async function handleConfirmOrder() {
+    if (!sessionId) {
+      alert('Sessão não encontrada. Recarregue o cardápio para continuar.')
+      return
+    }
+
+    if (isSubmitting) return
+
+    const resolvedTableId = sessionTableId ?? tableId
+    if (!resolvedTableId) {
+      alert('Mesa inválida.')
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      const clientRequestId = crypto.randomUUID()
+
+      await api.post(`/sessions/${sessionId}/orders`, {
+        clientRequestId,
+        items: items.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
+      })
+
+      clear()
+      navigate(`/mesa/${resolvedTableId}/sucesso`)
+    } catch (error) {
+      alert('Erro ao enviar pedido. Tente novamente.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -114,9 +149,10 @@ export default function Order() {
             </div>
             <button
               onClick={handleConfirmOrder}
-              className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg active:scale-95 transition"
+              disabled={isSubmitting}
+              className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg active:scale-95 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Confirmar Pedido
+              {isSubmitting ? 'Enviando...' : 'Confirmar Pedido'}
             </button>
           </div>
         </div>

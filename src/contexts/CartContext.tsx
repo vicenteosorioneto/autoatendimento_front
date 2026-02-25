@@ -13,6 +13,7 @@ interface CartContextData {
   addItem: (product: { id: string; name: string; price: number }) => void
   updateQuantity: (id: string, qty: number) => void
   removeItem: (id: string) => void
+  clear: () => void
   getTotalItems: () => number
   getTotalPrice: () => number
 }
@@ -58,6 +59,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prevItems) => prevItems.filter((item) => item.id !== id))
   }
 
+  function clear() {
+    setItems([])
+  }
+
   function getTotalItems(): number {
     return items.reduce((total, item) => total + item.quantity, 0)
   }
@@ -73,6 +78,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addItem,
         updateQuantity,
         removeItem,
+        clear,
         getTotalItems,
         getTotalPrice,
       }}
