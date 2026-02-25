@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
 import { useSession } from '../contexts/SessionContext'
@@ -8,8 +8,38 @@ export default function Order() {
   const { tableId } = useParams<{ tableId: string }>()
   const navigate = useNavigate()
   const { items, updateQuantity, removeItem, getTotalPrice, clear } = useCart()
-  const { sessionId, tableId: sessionTableId } = useSession()
+  const { sessionId, tableId: sessionTableId, setSessionId } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRecoveringSession, setIsRecoveringSession] = useState(false)
+
+  useEffect(() => {
+    if (sessionId !== null || !tableId) return
+
+    let isCancelled = false
+
+    async function recoverSession() {
+      try {
+        setIsRecoveringSession(true)
+        const response = await api.get(`/tables/${tableId}/menu`)
+        const recoveredSessionId = response.data?.sessionId
+
+        if (!isCancelled && recoveredSessionId) {
+          setSessionId(recoveredSessionId)
+        }
+      } catch {
+      } finally {
+        if (!isCancelled) {
+          setIsRecoveringSession(false)
+        }
+      }
+    }
+
+    recoverSession()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [sessionId, tableId, setSessionId])
 
   if (!tableId) {
     return <div className="p-4 text-red-600">Mesa inválida</div>
@@ -24,6 +54,9 @@ export default function Order() {
 
   async function handleConfirmOrder() {
     if (!sessionId) {
+      if (isRecoveringSession) {
+        return
+      }
       alert('Sessão não encontrada. Recarregue o cardápio para continuar.')
       return
     }
@@ -149,7 +182,7 @@ export default function Order() {
             </div>
             <button
               onClick={handleConfirmOrder}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isRecoveringSession}
               className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg active:scale-95 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Enviando...' : 'Confirmar Pedido'}
