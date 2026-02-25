@@ -10,9 +10,8 @@ export default function Order() {
   const storageKey = `mesa_social_pending_request_${tableId}`
   const navigate = useNavigate()
   const { items, updateQuantity, removeItem, getTotalPrice, clear } = useCart()
-  const { sessionId, tableId: sessionTableId, setSessionId } = useSession()
+  const { sessionId, tableId: sessionTableId, isRecoveringSession } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isRecoveringSession, setIsRecoveringSession] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(null)
 
@@ -24,36 +23,6 @@ export default function Order() {
       setPendingRequestId(storedPendingRequestId)
     }
   }, [tableId, storageKey])
-
-  useEffect(() => {
-    if (sessionId !== null || !tableId) return
-
-    let isCancelled = false
-
-    async function recoverSession() {
-      try {
-        setIsRecoveringSession(true)
-        const response = await api.get(`/tables/${tableId}/menu`)
-        const recoveredSessionId = response.data?.sessionId
-
-        if (!isCancelled && recoveredSessionId) {
-          setSessionId(recoveredSessionId)
-        }
-      } catch (error) {
-        console.error('Erro ao recuperar sessão da mesa', error)
-      } finally {
-        if (!isCancelled) {
-          setIsRecoveringSession(false)
-        }
-      }
-    }
-
-    recoverSession()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [sessionId, tableId, setSessionId])
 
   if (!tableId) {
     return <div className="p-4 text-red-600">Mesa inválida</div>

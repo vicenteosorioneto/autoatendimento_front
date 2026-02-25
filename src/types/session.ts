@@ -3,4 +3,6 @@ export interface SessionContextData {
   setSessionId: (sessionId: string | null) => void
   tableId: string | null
   setTableId: (tableId: string | null) => void
+  isRecoveringSession: boolean
+  recoverSession: (tableId: string) => Promise<void>
 }

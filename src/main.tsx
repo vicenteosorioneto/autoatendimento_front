@@ -6,6 +6,7 @@ import Landing from './pages/Landing.tsx'
 import Menu from './pages/Menu.tsx'
 import Order from './pages/Order.tsx'
 import Success from './pages/Success.tsx'
+import Account from './pages/Account.tsx'
 import { SessionProvider } from './contexts/SessionContext.tsx'
 import MesaLayout from './components/MesaLayout.tsx'
 
@@ -18,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/mesa/:tableId/*" element={<MesaLayout />}>
             <Route index element={<Menu />} />
             <Route path="pedido" element={<Order />} />
+            <Route path="conta" element={<Account />} />
             <Route path="sucesso" element={<Success />} />
           </Route>
         </Routes>
