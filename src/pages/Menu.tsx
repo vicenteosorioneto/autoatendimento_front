@@ -22,10 +22,20 @@ interface MenuErrorState {
   message?: string
 }
 
+interface MenuResponse {
+  sessionId?: string
+  categories?: Category[]
+  table: {
+    id: string
+    number: number
+  }
+}
+
 export default function Menu() {
   const { tableId } = useParams<{ tableId: string }>()
   const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
+  const [menu, setMenu] = useState<MenuResponse>()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<MenuErrorState | null>(null)
   const { addItem, getTotalItems } = useCart()
@@ -35,6 +45,7 @@ export default function Menu() {
   const loadMenu = useCallback(async () => {
     if (!tableId) {
       setProducts([])
+      setMenu(undefined)
       setError(null)
       setLoading(false)
       return
@@ -44,11 +55,10 @@ export default function Menu() {
       setLoading(true)
       setError(null)
       const response = await api.get(`/tables/${tableId}/menu`)
+      const menuData = response.data as MenuResponse
+      setMenu(menuData)
 
-      const { sessionId, categories } = response.data as {
-        sessionId?: string
-        categories?: Category[]
-      }
+      const { sessionId, categories } = menuData
 
       setSessionId(sessionId ?? null)
       setTableId(tableId)
@@ -88,6 +98,7 @@ export default function Menu() {
       }
 
       setProducts([])
+      setMenu(undefined)
     } finally {
       setLoading(false)
     }
@@ -109,7 +120,11 @@ export default function Menu() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="text-xl font-bold">Mesa Social</h1>
-              <p className="text-sm text-gray-500">Mesa {tableId}</p>
+              <p className="text-sm text-gray-500">
+                {menu?.table?.number
+                  ? `Mesa ${menu.table.number}`
+                  : 'Carregando mesa...'}
+              </p>
             </div>
             <button
               onClick={() => navigate(`/mesa/${tableId}/conta`)}
